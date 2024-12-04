@@ -1,0 +1,112 @@
+int red1 = 8;
+int green1 = 6;
+int yellow1 = 7;
+int red2 = 3;
+int green2 = 5;
+int yellow2 = 4;
+const int pingPin = 10; // Trigger Pin of Ultrasonic Sensor
+const int echoPin = 9;  // Echo Pin of Ultrasonic Sensor
+const int pingPin2 = 12; // Trigger Pin of Ultrasonic Sensor
+const int echoPin2 = 11; // Echo Pin of Ultrasonic Sensor
+
+unsigned long previousMillis = 0;
+const unsigned long interval = 30000;  // 30-second interval
+bool lane1Green = true; // Start with Lane 1 green by default
+
+void setup() {
+  pinMode(red1, OUTPUT);
+  pinMode(green1, OUTPUT);
+  pinMode(yellow1, OUTPUT);
+  pinMode(red2, OUTPUT);
+  pinMode(green2, OUTPUT);
+  pinMode(yellow2, OUTPUT);
+
+  // Initialize Lane 1 green and Lane 2 red at the start
+  digitalWrite(green1, HIGH);
+  digitalWrite(red1, LOW);
+  digitalWrite(yellow1, LOW);
+  digitalWrite(green2, LOW);
+  digitalWrite(red2, HIGH);
+  digitalWrite(yellow2, LOW);
+}
+
+void loop() {
+  int distance1 = calculatedistance(pingPin, echoPin);
+  int distance2 = calculatedistance(pingPin2, echoPin2);
+
+  if (distance1 > 30 && distance2 > 30) { // No traffic detected
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+
+      // Toggle lane green signal every 30 seconds
+      if (lane1Green) {
+        setLane1Red();
+        setLane2Green();
+      } else {
+        setLane2Red();
+        setLane1Green();
+      }
+      lane1Green = !lane1Green;
+    }
+  } else {
+    // Control lanes based on traffic detection
+    if (distance1 <= 30 && distance1 <= distance2) {
+      setLane1Green();
+      setLane2Red();
+    } else if (distance2 <= 30 && distance2 < distance1) {
+      setLane2Green();
+      setLane1Red();
+    }
+  }
+}
+
+// Functions to manage LED signals for each lane
+void setLane1Green() {
+  digitalWrite(red1, LOW);
+  digitalWrite(yellow1, LOW);
+  digitalWrite(green1, HIGH);
+  digitalWrite(red2, HIGH); // Ensure Lane 2 is red
+  digitalWrite(yellow2, LOW);
+  digitalWrite(green2, LOW);
+}
+
+void setLane1Red() {
+  digitalWrite(green1, LOW);
+  digitalWrite(yellow1, LOW);
+  digitalWrite(red1, HIGH);
+}
+
+void setLane2Green() {
+  digitalWrite(red2, LOW);
+  digitalWrite(yellow2, LOW);
+  digitalWrite(green2, HIGH);
+  digitalWrite(red1, HIGH); // Ensure Lane 1 is red
+  digitalWrite(yellow1, LOW);
+  digitalWrite(green1, LOW);
+}
+
+void setLane2Red() {
+  digitalWrite(green2, LOW);
+  digitalWrite(yellow2, LOW);
+  digitalWrite(red2, HIGH);
+}
+
+long microsecondsToCentimeters(long microseconds) {
+  return microseconds / 29 / 2;
+}
+
+int calculatedistance(int pingPin, int echoPin) {
+  long duration, cm;
+  pinMode(pingPin, OUTPUT);
+  digitalWrite(pingPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(pingPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(pingPin, LOW);
+
+  pinMode(echoPin, INPUT);
+  duration = pulseIn(echoPin, HIGH);
+  cm = microsecondsToCentimeters(duration);
+  return cm;
+}
